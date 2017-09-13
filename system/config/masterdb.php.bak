@@ -1,0 +1,32 @@
+<?php
+session_start();
+ 
+function getAccountDetails(){
+	if($_SERVER['REQUEST_METHOD']=='POST' && isset($_POST['poizxc']) && $_POST['poizxc']=='login'){
+	echo "inside";exit;
+	$servername = "localhost";
+	$username = "root";
+	$password = "";
+	$dbname = "transporterp_master";
+
+		// Create connection
+		$conn = new mysqli($servername, $username, $password, $dbname);
+		// Check connection
+		if ($conn->connect_error) {
+			die("Connection failed: " . $conn->connect_error);
+		}
+
+		$sql = "SELECT id_client FROM erp_client where accountid='".$_POST['account']."'";
+		//echo $sql;
+		$result = $conn->query($sql);
+		$row=$result->fetch_assoc();
+		//echo '<pre>';print_r($result);print_r($row);
+		//exit($result->id_client."here");
+		if((int)$row['id_client']){
+			$_SESSION['account']=$row['id_client'];
+		}
+		$conn->close();
+	//return $result->fetch_assoc();
+	}
+}
+

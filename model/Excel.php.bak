@@ -1,0 +1,193 @@
+<?php
+error_reporting(0);
+class ModelExcel  extends Model{
+
+    function clean(&$str, $allowBlanks = FALSE) {
+        $result = "";
+        $n = strlen($str);
+        for ($m = 0; $m < $n; $m++) {
+            $ch = substr($str, $m, 1);
+            if (($ch == " ") && (!$allowBlanks) || ($ch == "\n") || ($ch == "\r") || ($ch == "\t") || ($ch == "\0") || ($ch == "\x0B")) {
+                continue;
+            }
+            $result .= $ch;
+        }
+        return $result;
+    }
+
+    function import(&$database, $sql) {
+        foreach (explode(";\n", $sql) as $sql) {
+            $sql = trim($sql);
+            if ($sql) {
+                //$this->db->query($sql);
+                $this->db->query($sql);
+            }
+        }
+    }
+
+    protected function detect_encoding($str) {
+        // auto detect the character encoding of a string
+        return mb_detect_encoding($str, 'UTF-8,ISO-8859-15,ISO-8859-1,cp1251,KOI8-R');
+    }
+   
+    function getCell(&$worksheet, $row, $col, $default_val = '') {
+        $col -= 1; // we use 1-based, PHPExcel uses 0-based column index
+        $row += 1; // we use 0-based, PHPExcel used 1-based row index
+        return ($worksheet->cellExistsByColumnAndRow($col, $row)) ? $worksheet->getCellByColumnAndRow($col, $row)->getValue() : $default_val;
+    }
+
+    function validateHeading(&$data, &$expected) {
+        $heading = array();
+        $k = PHPExcel_Cell::columnIndexFromString($data->getHighestColumn());
+        if ($k != count($expected)) {
+            return FALSE;
+        }
+        $i = 0;
+        for ($j = 1; $j <= $k; $j+=1) {
+            $heading[] = $this->getCell($data, $i, $j);
+        }
+        $valid = TRUE;
+        for ($i = 0; $i < count($expected); $i+=1) {
+            if (!isset($heading[$i])) {
+                $valid = FALSE;
+                break;
+            }
+            if (strtolower($heading[$i]) != strtolower($expected[$i])) {
+                $valid = FALSE;
+                break;
+            }
+        }
+
+		
+        return $valid;
+    }
+
+    
+ 
+
+    function excelDateToDate($readDate) {
+        $phpexcepDate = $readDate - 25569; //to offset to Unix epoch
+        return strtotime("+$phpexcepDate days", mktime(0, 0, 0, 1, 1, 1970));
+    }
+
+     
+    protected function clearSpreadsheetCache() {
+        $files = glob($_SERVER['DOCUMENT_ROOT'] . "/cache" . 'Spreadsheet_Excel_Writer' . '*');
+        //$files = glob('C://xampp/htdocs/standalone' . "/cache" . 'Spreadsheet_Excel_Writer' . '*');
+        
+        if ($files) {
+            foreach ($files as $file) {
+                if (file_exists($file)) {
+                    @unlink($file);
+                    clearstatcache();
+                }
+            }
+        }
+    }
+
+    public function downloadTruckExpiry($rows) {
+		ob_end_clean();
+		//exit("value of ".DIR_SYSTEM);
+	 // We use the package from http://pear.php.net/package/Spreadsheet_Excel_Writer/
+        chdir(DIR_SYSTEM."library/excel/pear/");
+		//exit(DIR_SYSTEM."library/pear");
+		require_once "Spreadsheet/Excel/Writer.php";
+        chdir(DIR_SYSTEM."library/excel");
+        //exit($_SERVER['DOCUMENT_ROOT']);
+        // Creating a workbook
+        $workbook = new Spreadsheet_Excel_Writer();
+        $workbook->setTempDir(DIR_CACHE);
+        $workbook->setVersion(8); // Use Excel97/2000 Format
+        $priceFormat = & $workbook->addFormat(array('Size' => 10, 'Align' => 'right', 'NumFormat' => '######0.00'));
+        $boxFormat = & $workbook->addFormat(array('Size' => 10, 'vAlign' => 'vequal_space'));
+        $weightFormat = & $workbook->addFormat(array('Size' => 10, 'Align' => 'right', 'NumFormat' => '##0.00'));
+        $textFormat = & $workbook->addFormat(array('Size' => 10, 'NumFormat' => "@"));
+        // sending HTTP headers
+        $workbook->send('truck_expiry_'.date("Y-m-d h:i:s").'.xls');
+        // Creating the Truck Details worksheet
+        $expDays=strtotime(date('Y-m-d', strtotime(date('Y-m-d') . ' -5 day')));
+
+		$worksheet = & $workbook->addWorksheet('Fitness');
+        $worksheet->setInputEncoding('UTF-8');
+        $this->populateWorksheet($expDays,'fitnessexpdate',$rows,$worksheet, $database, $priceFormat, $boxFormat, $textFormat);
+        $worksheet->freezePanes(array(1, 1, 1, 1));
+
+		$worksheet = & $workbook->addWorksheet('Insurance');
+        $worksheet->setInputEncoding('UTF-8');
+        $this->populateWorksheet($expDays,'insuranceexpdate',$rows,$worksheet, $database, $priceFormat, $boxFormat, $textFormat);
+        $worksheet->freezePanes(array(1, 1, 1, 1));
+
+		$worksheet = & $workbook->addWorksheet('National Permit');
+        $worksheet->setInputEncoding('UTF-8');
+        $this->populateWorksheet($expDays,'nationalpermitexpdate',$rows,$worksheet, $database, $priceFormat, $boxFormat, $textFormat);
+        $worksheet->freezePanes(array(1, 1, 1, 1));
+
+		$worksheet = & $workbook->addWorksheet('Pollution');
+        $worksheet->setInputEncoding('UTF-8');
+        $this->populateWorksheet($expDays,'pollutionexpdate',$rows,$worksheet, $database, $priceFormat, $boxFormat, $textFormat);
+        $worksheet->freezePanes(array(1, 1, 1, 1));
+
+		$worksheet = & $workbook->addWorksheet('Tax Payable');
+        $worksheet->setInputEncoding('UTF-8');
+        $this->populateWorksheet($expDays,'taxpayabledate',$rows,$worksheet, $database, $priceFormat, $boxFormat, $textFormat);
+        $worksheet->freezePanes(array(1, 1, 1, 1));
+
+		$worksheet = & $workbook->addWorksheet('Hub Service');
+        $worksheet->setInputEncoding('UTF-8');
+        $this->populateWorksheet($expDays,'hubservicedate',$rows,$worksheet, $database, $priceFormat, $boxFormat, $textFormat);
+        $worksheet->freezePanes(array(1, 1, 1, 1));
+
+		$worksheet = & $workbook->addWorksheet('Date In Service');
+        $worksheet->setInputEncoding('UTF-8');
+        $this->populateWorksheet($expDays,'dateinservice',$rows,$worksheet, $database, $priceFormat, $boxFormat, $textFormat);
+        $worksheet->freezePanes(array(1, 1, 1, 1));
+
+
+        
+       // Let's send the file
+
+        $workbook->close();
+
+        // Clear the spreadsheet caches
+        $this->clearSpreadsheetCache();
+        exit;
+		
+    }
+
+	function populateWorksheet($expDays,$type,$rows,&$worksheet, &$database, &$priceFormat, &$boxFormat, &$textFormat) {
+        // Set the column widths
+        $j = 0;
+        $worksheet->setColumn($j, $j++, strlen('Truck No') + 20);
+		$worksheet->setColumn($j, $j++, strlen('Expiry Date') + 20);
+		//$worksheet->setColumn($j, $j++, strlen('Mobile') + 20);
+		
+ 
+        // The heading row
+        $i = 0;
+        $j = 0;
+        $worksheet->writeString($i, $j++, 'Truck No', $boxFormat);
+        $worksheet->writeString($i, $j++, 'Expiry Date', $boxFormat);
+        //$worksheet->writeString($i, $j++, 'Mobile', $boxFormat);
+       
+
+        $worksheet->setRow($i, 30, $boxFormat);
+
+        // The actual product specials data
+        $i += 1;
+        $j = 0;
+	    //$result_rows=Yii::app()->db->createCommand("select * from wn_subscribe order by dateCreated desc")->QueryAll();
+        /*$result_rows[]=array('name'=>'suresh','email'=>'email@gmail.com','mobile'=>'9966332255');
+		$result_rows[]=array('name'=>'suresh','email'=>'email@gmail.com','mobile'=>'9966332255');*/
+		foreach ($rows as $row) {
+			if(strtotime($row[$type])>$expDays){
+				$worksheet->setRow($i, 13);
+				$worksheet->write($i, $j++, $row['truckno'], $textFormat);
+				$worksheet->write($i, $j++, $row[$type], $textFormat);
+				//$worksheet->write($i, $j++, $row['mobile'], $textFormat);
+				$i += 1;
+				$j = 0;
+			}	
+        }
+    }
+    
+}?>

@@ -1,0 +1,67 @@
+<div class="row">
+<div class="search-container search-row col-md-12">
+    <form id="horizontalSearchFormFilter" class="form-horizontal-filter" method="post">
+	<!-- <input class="search-input" type="text" name="filter_material" placeholder="Material"> -->
+	<fieldset class="large-form-fieldset">
+        <legend>Filter</legend>
+	<div class="form-group col-md-4 required">
+    <label for="accountID" class="col-md-4">Factories :</label>
+    <div class="col-md-8">
+        <select name="filter_id_factory" class="form-control"  data-toggle="tooltip" data-placement="auto top" title="Tuck" id="filter_id_factory"  data-original-title="Truck" >
+        <option value="">Select Factory</option>
+	<?php foreach($factories as $row){
+		echo '<option value="'.$row['id_factory'].'">'.$row['factoryname']." - ".$row['factorycode'].'</option>';
+	}?>
+        </select>
+    </div>
+</div>
+
+<div class="form-group col-md-4 required">
+    <label for="accountID" class="col-md-4">Bills Raised<span class="mandatory">*</span> :</label>
+    <div class="col-md-8">
+        <input name="filter_bills_raised" class="form-control" placeholder="Bills Raised" data-toggle="tooltip" data-placement="auto top" title="" id="filter_bills_raised"  data-original-title="Bills Raised" type="checkbox">
+    </div>
+</div>
+
+<div class="form-group col-md-4 required">
+    <label for="accountID" class="col-md-4">Bills Over Due<span class="mandatory">*</span> :</label>
+    <div class="col-md-8">
+        <input name="filter_over_due" class="form-control" placeholder="Bills Over Due" data-toggle="tooltip" data-placement="auto top" title="" id="filter_over_due"  data-original-title="Bills Over Due" type="checkbox">
+    </div>
+</div>
+
+<div class="form-group col-md-4 required">
+    <label for="accountID" class="col-md-4">Bills Closed<span class="mandatory">*</span> :</label>
+    <div class="col-md-8">
+        <input name="filter_closed" class="form-control" placeholder="Bills Closed" data-toggle="tooltip" data-placement="auto top" title="" id="filter_closed"  data-original-title="Bills Closed" type="checkbox">
+    </div>
+</div>
+
+<input id="submitFilter" class="sbmt-btn" type="submit" name="search" value="Search">
+	</fieldset>
+    </form>
+</div>
+</div>
+<link rel="stylesheet" href="https://code.jquery.com/ui/1.12.0/themes/base/jquery-ui.css">
+<script src="https://code.jquery.com/ui/1.12.0/jquery-ui.js"></script>    
+<script>
+$(function() {
+	$("#field_paidon").datepicker({dateFormat: 'yy-mm-dd'});
+});
+
+$('#filter_id_truck').on("change",function(e){
+	e.preventDefault();
+	var data = $('form#horizontalSearchFormFilter').serialize();
+	//alert(data);
+	getList('index.php?route=<?php echo $route;?>/getlist&token=<?php echo $token; ?>&' + data);
+});
+
+$('#field_paymentmode').on("change",function(e){
+    if($(this).val()=='CQ'){
+        $('#field_chequeno').show();
+    }else{
+        $('#field_chequeno').hide();
+    }
+});
+
+</script>

@@ -1,0 +1,22 @@
+        <div id="form_right" class="right-side-form col-md-3">
+            <div class="right-side-form-title"><?php echo $page['title']; ?> <span style="font-style:italic;font-size:10px;font-weight:bold">Add/Edit</span></div>
+            <form id="horizontalForm" class="form-horizontal" method="post" >
+                
+		<?php 
+		      getInputText(array("col"=>"operatingroutecode","title"=>"Route Code","required"=>1));
+		      getInputText(array("col"=>"fromplace","title"=>"From","required"=>1));
+		      getInputText(array("col"=>"toplace","title"=>"To","required"=>1));
+		      getInputText(array("col"=>"distance","title"=>"Distance","required"=>1));
+		      getInputTextArea(array("col"=>"tollcharge","title"=>"Toll Charge","required"=>0));
+		      getInputText(array("col"=>"nooftollgates","title"=>"No Of Tollgates","required"=>0));
+		?>	
+                
+		<div class="sbmt-btn-holder"> 
+		<input  type="hidden" name="pkey" id="pkey">
+		<button type="submit" class="right-side-form-sbmt-btn <?php echo $editPermClass; ?>" onclick="fnSubmit('edit');
+                        return false;"><li class="fa fa-pencil fa-fw"></li> Update</button><button type="submit" class="right-side-form-sbmt-btn <?php echo $addPermClass; ?>" onclick="fnSubmit('add');
+                                return false;"><li class="fa fa-fw fa-plus"></li> Create</button>
+                </div>
+
+            </form>
+        </div>

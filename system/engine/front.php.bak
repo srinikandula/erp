@@ -1,0 +1,52 @@
+<?php
+final class Front {
+	private $registry;
+	private $pre_action = array();
+	private $error;
+
+	public function __construct($registry) {
+		$this->registry = $registry;
+	}
+	
+	public function addPreAction(Action $pre_action) {
+		$this->pre_action[] = $pre_action;
+	}
+	
+	public function dispatch(Action $action, Action $error) {
+		$this->error = $error;
+		//echo '<pre>';print_r($action);print_r($error);
+		//
+		echo '<pre>';print_r($this->pre_action);echo '</pre>';
+		foreach ($this->pre_action as $pre_action) {
+			//echo '<pre>';print_r($this->pre_action);print_r($error);
+			//exit("value of ");
+
+			$result = $this->execute($pre_action);
+			if ($result instanceof Action) {
+				$action = $result;
+
+				break;
+			}
+		}
+
+		while ($action instanceof Action) {
+			$action = $this->execute($action);
+		}
+	}
+
+	private function execute(Action $action) {
+		$result = $action->execute($this->registry);
+
+		if ($result instanceof Action) {
+			return $result;
+		} 
+		
+		if ($result instanceof Exception) {
+			$action = $this->error;
+			
+			$this->error = null;
+			
+			return $action;
+		}
+	}
+}

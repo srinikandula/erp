@@ -1,0 +1,99 @@
+<table class="mtable table table-striped table-bordered table-responsive table-condensed table-hover" style="width:100%">
+    <thead>
+        <tr>
+            <th><input type="checkbox" onclick="$('input[name*=\'selected\']').prop('checked', this.checked);" /></th>
+            <th>S.No</th>
+            <th>PaymentID</th>
+            <th>Vendor</th>
+            <th>Code</th>
+            <th>Contact Name</th>
+            <th>Contact Mobile</th>
+            <th>Date Purchased</th>
+            <th>Payment Mode</th>
+            <th>Amount</th>
+            <th></th>
+	  </tr>
+    </thead>
+    <tbody>
+        <?php if ($items) {  
+                    foreach ($items as $k => $item) { ?>
+            <tr id="list_<?php echo $item['id']; ?>">
+                <td><?php if (in_array($item['id'], $selected)) { ?>
+                    <input type="checkbox" name="selected[]" value="<?php echo $item['id']; ?>" checked="checked" />
+        <?php } else { ?>
+                    <input type="checkbox" name="selected[]" value="<?php echo $item['id']; ?>" />
+        <?php } ?></td>
+                    <td><?php echo $item['sno']; ?></td>
+                    <td id="list_id_store_vendor_payment_<?php echo $item['id']; ?>"><?php echo $item['id_store_vendor_payment']; ?></td>
+		    <td id="list_vendorname_<?php echo $item['id']; ?>"><?php echo $item['vendorname']; ?></td>
+                    <td id="list_vendorcode_<?php echo $item['id']; ?>"><?php echo $item['vendorcode']; ?></td>
+		    <td id="list_contactname_<?php echo $item['id']; ?>"><?php echo $item['contactname']; ?></td>
+		    <td id="list_contactmobile_<?php echo $item['id']; ?>"><?php echo $item['contactmobile']; ?></td>
+                    <td id="list_datepurchased_<?php echo $item['id']; ?>"><?php echo date(FORMAT_DATE_FORMAT, strtotime($item['datepurchased'])); ?></td>
+		    <td id="list_paymentmode_desc_<?php echo $item['id']; ?>"><?php echo $item['paymentmode_desc']; ?></td>
+		    <td id="list_amount_<?php echo $item['id']; ?>"><?php echo $item['amount']; ?></td>
+                    <td>
+		    <span class="spanEdit" id="list_editbtn_<?php echo $item['id']; ?>" data-fulltext='<?php echo json_encode($item); ?>' ><i class="fa fa-fw fa-edit" ></i></span>
+		    </td>
+	        </tr>
+        <?php } ?>
+        <?php } else { ?>
+            <tr>
+                <td class="text-center" colspan="8">No Data Available</td>
+            </tr>
+        <?php } ?>
+    </tbody>
+</table>
+<?php include(DIR_TEMPLATE.'common/_pagination.tpl');?>
+<script>
+$('.spanEdit').on('click',function(){
+//e.preventDefault();
+
+	var json=JSON.parse($(this).attr('data-fulltext'));
+        fnGetStoreItems(json);
+        $('#myModal').modal('show');
+	$('#btnUpdate').removeClass('hidden');
+        $('#btnCreate').hide();
+	$.each(json, function (key, data) {
+	    if(key=='own' && data==1){
+		$('#field_'+key).prop('checked', true);
+		return true;
+	    }
+	    $('#field_'+key).val(data);
+	});
+        $('#store_items_table tbody').html("");
+        
+        $.each(json['items'], function (key1, data1) {
+            fnItems(data1);
+	});
+        $('#pkey').val(json.id);
+
+});
+
+function fnGetStoreItems(json){
+        stockItemsOption={};
+        var stockItemsOptionOL="";
+        var stockItemsOptionTY="";
+        var stockItemsOptionSP="";
+        
+        stockItemsOptionOL="<optgroup label='Oil'>";
+        $.each(stockItemsJson['OL'], function (key0, data0) {
+            stockItemsOptionOL+="<option value="+data0['id_store_item']+">"+data0['itemname']+"-"+data0['make']+"</option>"
+	});
+        stockItemsOptionOL+="</optgroup>";
+        
+        stockItemsOptionTY="<optgroup label='Tyre'>";
+        $.each(stockItemsJson['TY'], function (key1, data1) {
+            stockItemsOptionTY+="<option value="+data1['id_store_item']+">"+data1['itemname']+"-"+data1['make']+"</option>"
+	});
+        stockItemsOptionTY+="</optgroup>";
+        
+        stockItemsOptionSP="<optgroup label='Spare'>";
+        $.each(stockItemsJson['SP'], function (key2, data2) {
+            stockItemsOptionSP+="<option value="+data2['id_store_item']+">"+data2['itemname']+"-"+data2['make']+"</option>"
+	});
+        stockItemsOptionSP+="</optgroup>";
+    
+        stockItemsOption=stockItemsOptionSP+stockItemsOptionOL+stockItemsOptionTY;
+}
+</script>

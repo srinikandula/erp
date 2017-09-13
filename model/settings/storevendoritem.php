@@ -1,0 +1,176 @@
+<?php
+class ModelSettingsStorevendoritem extends Model {
+	public $mTable;
+	public $pKey;
+
+	public function __construct($className=__CLASS__){
+		$this->mTable=DB_PREFIX.'store_vendor_item';
+		$this->pKey='id_store_vendor_item';
+		return parent::__construct($className);
+	}
+	
+	public function dataQry($data=array()){
+		$return="";
+		$comma="";
+		foreach($data as $k=>$v){
+			$return.=$comma.$k."='".$this->db->escape($v)."'";
+			$comma=",";
+		}
+		return $return;
+	}
+
+	public function addItem($data) {
+		
+		$this->db->query("INSERT INTO ".$this->mTable." SET ".$this->dataQry($data));
+		return $this->db->getLastId();
+	}
+
+	public function editItem($id, $data) {
+		$this->db->query("update ".$this->mTable." SET ".$this->dataQry($data)." where ".$this->pKey."=".(int)$id);
+	}
+
+	public function deleteItem($id) {
+		$this->db->query("DELETE FROM ".$this->mTable." WHERE ".$this->pKey." = '" . (int)$id . "'");
+	}
+
+	public function deleteItemByStoreVendorPaymentID($id) {
+		$this->db->query("DELETE FROM ".$this->mTable." WHERE id_store_vendor_payment = '" . (int)$id . "'");
+	}
+
+	public function getItem($id) {
+		$query = $this->db->query("SELECT * from ".$this->mTable." where ".$this->pKey." = '" . (int)$id . "'");
+
+		return $query->row;
+	}
+
+	public function getItems($data = array()) {
+	
+		
+		$sql="SELECT * from ".$this->mTable." where ".$this->pKey."!=0";
+		
+		$sql=$this->getFilterSql($data,$sql);
+		
+		$sort_data = array(
+			
+			'qty',
+			'price'
+		);
+
+		if (isset($data['sort']) && in_array($data['sort'], $sort_data)) {
+			$sql .= " ORDER BY " . $data['sort'];
+		} else {
+			$sql .= " ORDER BY id_store_vendor_item";
+		}
+
+		if (isset($data['order']) && ($data['order'] == 'DESC')) {
+			$sql .= " DESC";
+		} else {
+			$sql .= " ASC";
+		}
+
+		if (isset($data['start']) || isset($data['limit'])) {
+			if ($data['start'] < 0) {
+				$data['start'] = 0;
+			}
+
+			if ($data['limit'] < 1) {
+				$data['limit'] = 20;
+			}
+
+			$sql .= " LIMIT " . (int)$data['start'] . "," . (int)$data['limit'];
+		}
+		//print($sql);
+		$query = $this->db->query($sql);
+		return $query;
+	}
+
+	public function getFilterSql($data,$sql){
+		
+		if (!empty($data['filter_vendorname'])) {
+			$sql .= " AND vendorname LIKE '%" . $this->db->escape($data['filter_vendorname']) . "%'";
+		}
+
+		if (!empty($data['filter_id_store_vendor_payment'])) {
+			$sql .= " AND id_store_vendor_payment = '" . (int)$data['filter_id_store_vendor_payment'] . "'";
+		}
+
+		if (!empty($data['filter_id_store_vendor'])) {
+			$sql .= " AND id_store_vendor = '" . (int)$data['filter_id_store_vendor'] . "'";
+		}
+
+		if (!empty($data['filter_id_branch_store'])) {
+			$sql .= " AND id_branch_store = '" . (int)$data['filter_id_branch_store'] . "'";
+		}
+
+		if (!empty($data['filter_id_store_item'])) {
+			$sql .= " AND id_store_item = '" . (int)$data['filter_id_store_item'] . "'";
+		}
+
+		if (!empty($data['filter_datefrom']) && !empty($data['filter_dateto'])) {
+			$sql .= " AND (datepurchased> = '" . (int)$data['filter_datefrom'] . "' and datepurchased< = '" . (int)$data['filter_dateto'] . "') ";
+		}
+
+		return $sql;
+	}
+
+	public function getTotalItems($data = array()) {
+		$sql="SELECT COUNT(*) AS total FROM ".$this->mTable." where ".$this->pKey."!=0";
+		
+		$sql=$this->getFilterSql($data,$sql);
+		$query = $this->db->query($sql);
+
+		return $query->row['total'];
+	}
+
+	public function getTotalItemsByVendorBranch($data = array()) {
+		//$sql="SELECT COUNT(*) AS total FROM ".$this->mTable." where ".$this->pKey."!=0";
+		$sql="select count(*)  AS total from erp_store_vendor_item svi left join erp_store_vendor_payment svp on svi.id_store_vendor_payment=svp.id_store_vendor_payment left join erp_store_item si on svi.id_store_item=si.id_store_item";
+
+		$sql=$this->getFilterSql($data,$sql);
+		$query = $this->db->query($sql);
+
+		return $query->row['total'];
+	}
+
+
+
+	public function getItemsByVendorBranch($data = array()) {
+	
+		
+		//$sql="SELECT * from ".$this->mTable." where ".$this->pKey."!=0";
+		$sql="select sv.vendorname,b.branchcity,svi.price,svi.id_store_vendor_item,svp.datepurchased,svp.id_store_vendor,svp.id_store_vendor_payment,svp.id_branch_store,svi.refno,svi.qty,si.id_store_item,si.itemname,si.description,si.make,si.type from erp_store_vendor_item svi left join erp_store_vendor_payment svp on svi.id_store_vendor_payment=svp.id_store_vendor_payment left join erp_store_item si on svi.id_store_item=si.id_store_item left join erp_branch b on svp.id_branch_store=b.id_branch left join erp_store_vendor sv on svp.id_store_vendor=sv.id_store_vendor";
+		
+		$sql=$this->getFilterSql($data,$sql);
+		
+		$sort_data = array(
+			'svp.datepurchased'
+		);
+
+		if (isset($data['sort']) && in_array($data['sort'], $sort_data)) {
+			$sql .= " ORDER BY " . $data['sort'];
+		} else {
+			$sql .= " ORDER BY svp.datepurchased";
+		}
+
+		if (isset($data['order']) && ($data['order'] == 'DESC')) {
+			$sql .= " DESC";
+		} else {
+			$sql .= " ASC";
+		}
+
+		if (isset($data['start']) || isset($data['limit'])) {
+			if ($data['start'] < 0) {
+				$data['start'] = 0;
+			}
+
+			if ($data['limit'] < 1) {
+				$data['limit'] = 20;
+			}
+
+			$sql .= " LIMIT " . (int)$data['start'] . "," . (int)$data['limit'];
+		}
+		//print($sql);
+		$query = $this->db->query($sql);
+		return $query;
+	}
+}

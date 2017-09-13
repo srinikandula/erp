@@ -1,0 +1,141 @@
+<?php
+namespace Cart;
+class User {
+	private $user_id;
+	private $username;
+	private $permission = array();
+
+	public function __construct($registry) {
+		$this->db = $registry->get('db');
+		$this->newdb = $registry->get('newdb');
+
+		$this->request = $registry->get('request');
+		$this->session = $registry->get('session');
+		$this->cache = $registry->get('cache');
+		$this->url = $registry->get('url');
+		if (isset($this->session->data['user_id'])) {
+			if ($this->session->data['user_id']) {
+				//print_r($_SESSION);echo '</pre>';
+				//echo "inside";
+				$this->user_id = $this->session->data['user_id'];
+				$this->username = $this->session->data['username'];
+				$this->user_group_id = $this->session->data['id_admin_role'];
+
+				$this->db->query("UPDATE " . DB_PREFIX . "admin SET ip = '" . $this->db->escape($this->request->server['REMOTE_ADDR']) . "' WHERE id_admin = '" . (int)$this->session->data['user_id'] . "'");
+				if(!sizeof($this->permission)){
+					//echo "here om ";
+					$this->permission=$this->getUserPermissions();
+				}
+			} else {
+				$this->logout();
+			}
+		}
+	}
+
+	public function login($username, $password, $account) {
+
+		$user_query = $this->db->query("SELECT * FROM " . DB_PREFIX . "admin WHERE username = '" . $this->db->escape($username) . "' AND (password = SHA1(CONCAT(salt, SHA1(CONCAT(salt, SHA1('" . $this->db->escape($password) . "'))))) OR password = '" . $this->db->escape(md5($password)) . "') AND status = '1'");
+		//exit("value of ".$user_query->num_rows);	
+		if ($user_query->num_rows) {
+			$this->session->data['user_id'] = $user_query->row['id_admin'];
+			$this->session->data['username'] = $user_query->row['username'];
+			$this->session->data['adminname'] = $user_query->row['adminname'];
+			$this->session->data['adminemail'] = $user_query->row['adminemail'];
+			$this->session->data['id_branch'] = $user_query->row['id_branch'];
+			$this->session->data['id_admin_role'] = $user_query->row['id_admin_role'];
+			
+			$this->user_id = $user_query->row['id_admin'];
+			$this->username = $user_query->row['username'];
+			$this->user_group_id = $user_query->row['id_admin_role'];
+			//$_SESSION['account']=$account;
+			//$this->permission=$this->getUserPermissions();
+
+			return true;
+		} else {
+			return false;
+		}
+	}
+
+	public function logout() {
+		unset($this->session->data['user_id']);
+		//unset($_SESSION);
+		session_destroy();
+		$this->user_id = '';
+		$this->username = '';
+	}
+
+	public function hasPermission($key, $value) {
+		//$exp=explode("/",$value);
+		//if(isset($this->permission[$exp[0]][$exp[1]][$key])){
+			//echo '<pre>';print_r($this->permission[$value]);
+		//echo $key." ".$value." value of ".$this->permission[$value][$key]."<br/>";//exit;
+		//if(isset($this->permission[$value][$key])){
+		if($this->permission[$value][$key]){
+			return true;
+		} else {
+			//exit("in else");
+			return false;
+		}
+	}
+
+	public function isLogged() {
+		return $this->user_id;
+	}
+
+	public function getId() {
+		return $this->user_id;
+	}
+
+	public function getUserName() {
+		return $this->username;
+	}
+
+	public function getPermission() {
+		return $this->permission;
+	}
+
+	public function getRoutePermission($route) {
+		return $this->permission[$route];
+	}
+
+	public function getGroupId() {
+		return $this->user_group_id;
+	}
+
+	public function getUserPermissions(){
+		//$this->cache->set(rand(10,100),'hello');
+		//$return = $this->cache->get('getUserPermissions_'.$this->session->data['id_admin_role']);
+		//if (!$return && isset($this->request->get['token'])) {
+			//exit("hello");
+			$user_permissions_query=$this->db->query("select * from " . DB_PREFIX . "admin_permission where status=1 and view=1 and  id_admin_role=".(int)$_SESSION['default']['id_admin_role']." order by modulesortorder asc,filesortorder asc");
+			//echo $this->url->link('common/dashboard', 'token=' . $this->session->data['token'], true);
+			$return=array();
+			foreach($user_permissions_query->rows as $row){
+				//$return[strtolower($row['modulename'])][$row['filename']]=array('title'=>$row['title'],'link'=>$this->url->link(strtolower(str_replace(" ","",$row['modulename']."/".$row['filename'])), 'token=' . $this->session->data['token'], true),'listall'=>$row['listall'],'view'=>$row['view'],'add'=>$row['add'],'edit'=>$row['edit'],'delete'=>$row['delete']);
+				$return[strtolower($row['modulename'])."/".$row['filename']]=array('modulelabel'=>$row['modulelabel'],'filename'=>$row['filename'],'title'=>$row['title'],'link'=>$this->url->link(strtolower(str_replace(" ","",$row['modulename']."/".$row['filename'])), 'token=' . $this->session->data['token'], true),'listall'=>$row['listall'],'view'=>$row['view'],'add'=>$row['add'],'edit'=>$row['edit'],'delete'=>$row['delete']);
+			}
+			//'link'=>$this->url->link(strtolower(str_replace(" ","",$row['modulename']."/".$row['filename'])), 'token=' . $this->session->data['token'], true),
+		//	$this->cache->set('getUserPermissions_'.$this->session->data['id_admin_role'], $return);
+		//}
+		//echo '<pre>';print_r($return); print_r($user_permissions_query->rows);exit;
+		return $return;
+		//$this->permission;
+	}
+
+	 public function getPageAccessInfo($route) {
+        $data['page'] = $this->getRoutePermission($route);
+        $data['addPermClass'] = $data['page']['add'] ? '' : 'hidden';
+        $data['editPermClass'] = $data['page']['edit'] ? '' : 'hidden';
+        $data['deletePermClass'] = $data['page']['delete'] ? '' : 'hidden';
+
+        return $data;
+    }
+
+	public function gpsDeviceSession(){
+		if(!isset($_SESSION['device'])){
+			//exit("inside");
+			$qryDevices=$this->newdb->query("select deviceID,vehicleModel,vehicleID,truckTypeId,vehicleType,uniqueID,simPhoneNumber,simID,imeiNumber,lastValidLatitude,lastValidLongitude,lastValidSpeedKPH,lastGPSTimestamp,displayName,description,lastUpdateTime,creationTime from Device where accountID like '".$_SESSION['gps_account_id']."'");
+			$_SESSION['device']=$qryDevices->rows;
+		}
+	}
+}

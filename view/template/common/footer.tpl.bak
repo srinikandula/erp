@@ -1,0 +1,14 @@
+</div>
+
+
+<!-- Bootstrap Core JavaScript -->
+<script src="<?php echo HTTP_SERVER;?>view/js/bootstrap.min.js"></script>
+<script src="<?php echo HTTP_SERVER;?>view/js/main.js"></script>
+
+<!-- Morris Charts JavaScript -->
+<!-- <script src="js/plugins/morris/raphael.min.js"></script>
+<script src="js/plugins/morris/morris.min.js"></script>
+<script src="js/plugins/morris/morris-data.js"></script> -->
+
+</body>
+</html>
